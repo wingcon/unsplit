@@ -102,7 +102,7 @@ handle_cast(_Msg, State) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-handle_info({mnesia_system_event, 
+handle_info({mnesia_system_event,
              {inconsistent_database, Context, Node}}, State) ->
     unsplit:log_write(normal, "inconsistency. Context = ~p; Node = ~p~n", [Context, Node]),
     Res = global:trans(
@@ -245,13 +245,18 @@ run_stitch(#st{table = Tab,
 	       strategy = {Ms,Fs}, remote = Remote} = St) ->
     {ok, Objs, MSt1} = Ms:Fs(Tab, Remote, MSt),
     run_stitch(check_return(M:F(Objs, MSt1), St));
-run_stitch(#st{table = Tab, 
+
+
+run_stitch(#st{table = Tab,
                module = M, function = F, modstate = MSt,
                strategy = all_keys, remote = Remote} = St) ->
-    Keys = mnesia:dirty_all_keys(Tab),
+
+    RemoteKeys = rpc:call(Remote, mnesia, dirty_all_keys, [Tab]),
+    LocalKeys = mnesia:dirty_all_keys(Tab),
+    Keys = mnesia_lib:uniq(LocalKeys ++ RemoteKeys),
     lists:foldl(
       fun(K, Sx) ->
-              [_] = A = mnesia:read({Tab,K}),  % assert that A is non-empty
+              A = mnesia:read({Tab,K}),  % assert that A is non-empty
               B = get_remote_obj(Remote, Tab, K),
               if A == B ->
                       Sx;
@@ -309,8 +314,8 @@ affected_tables(IslandA, IslandB) ->
                         [mnesia:table_info(T, C) ||
 			    C <- backend_types()]),
               unsplit:log_write(normal, "nodes_of(~p) = ~p~n", [T, Nodes]),
-              case {intersection(IslandA, Nodes), 
-                    intersection(IslandB, Nodes)} of 
+              case {intersection(IslandA, Nodes),
+                    intersection(IslandB, Nodes)} of
                   {[_|_], [_|_]} ->
                       [{T, Nodes}|Acc];
                   _ ->
