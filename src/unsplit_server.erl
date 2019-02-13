@@ -213,7 +213,6 @@ do_stitch({Tab, Ns, {M, F, XArgs}} = TM, Remote) ->
 -spec check_return(unsplit:merge_ret(), #st{}) -> #st{}.
 
 check_return(Ret, S) ->
-    unsplit:log_write(normal, " -> ~p~n", [Ret]),
     case Ret of
         stop -> throw(?DONE);
         {ok, St} ->

@@ -134,7 +134,6 @@ last_version_entry(Obj, T, P) ->
 		       end).
 
 compare(Obj, T, P, Comp) ->
-    unsplit:log_write(normal, "compare(~p)~n", [Obj]),
     case Obj of
         {A, []} -> {write, A};
         {[], B} -> {write, B};
